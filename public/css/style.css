@@ -1482,3 +1482,5 @@ input[type="checkbox"]:hover {
   .admin-sidebar, .chat-widget, .modal-overlay { display: none !important; }
   .admin-main { margin-right: 0; }
 }
+
+.btn-warning{background:linear-gradient(135deg,var(--orange),#d97706);color:#000;box-shadow:0 4px 15px rgba(245,158,11,.2)}.btn-warning:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(245,158,11,.35)}

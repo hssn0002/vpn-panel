@@ -9,12 +9,7 @@
 </head>
 <body>
   <div id="loginScreen" class="login-container">
-    <div class="login-box">
-      <h2>🔐 ورود به پنل مدیریت</h2>
-      <div class="form-group"><label>رمز عبور</label><input type="password" id="loginPassword" class="form-control" placeholder="رمز عبور را وارد کنید..." /></div>
-      <button class="btn btn-primary btn-lg w-full" onclick="login()">ورود</button>
-      <p id="loginError" class="text-red text-center mt-2" style="display:none;"></p>
-    </div>
+    <div class="login-box"><h2>🔐 ورود</h2><div class="form-group"><label>رمز عبور</label><input type="password" id="loginPassword" class="form-control" placeholder="رمز عبور..."/></div><button class="btn btn-primary btn-lg w-full" onclick="login()">ورود</button><p id="loginError" class="text-red text-center mt-2" style="display:none;"></p></div>
   </div>
 
   <div id="mainPanel" class="admin-layout" style="display:none;">
@@ -24,50 +19,38 @@
         <a href="#" class="active" data-page="users" onclick="switchPage('users',this)">👥 کاربران</a>
         <a href="#" data-page="chatroom" onclick="switchPage('chatroom',this)">💬 چت‌روم <span id="chatBadge" class="notif-badge" style="display:none;">0</span></a>
         <a href="#" data-page="adduser" onclick="switchPage('adduser',this)">➕ کاربر جدید</a>
-        <a href="#" data-page="bulkrename" onclick="switchPage('bulkrename',this)">✏️ تغییر نام گروهی</a>
         <a href="#" data-page="backup" onclick="switchPage('backup',this)">📦 بکاپ</a>
-        <a href="#" data-page="telegram" onclick="switchPage('telegram',this)">🤖 بات تلگرام</a>
+        <a href="#" data-page="telegram" onclick="switchPage('telegram',this)">🤖 تلگرام</a>
         <a href="#" data-page="settings" onclick="switchPage('settings',this)">⚙️ تنظیمات</a>
-        <a href="#" data-page="password" onclick="switchPage('password',this)">🔑 تغییر رمز</a>
+        <a href="#" data-page="password" onclick="switchPage('password',this)">🔑 رمز</a>
       </nav>
     </aside>
 
     <main class="admin-main">
-      <!-- Users Page -->
+      <!-- Users -->
       <div id="page-users" class="page">
-        <div class="admin-header">
-          <h2>👥 لیست کاربران</h2>
+        <div class="admin-header"><h2>👥 کاربران</h2>
           <div class="btn-group">
             <button class="btn btn-outline btn-sm" onclick="refreshAllSubs()">🔄 بروزرسانی همه</button>
             <button class="btn btn-danger btn-sm" id="bulkDeleteBtn" style="display:none;" onclick="bulkDelete()">🗑️ حذف انتخاب شده</button>
-            <button class="btn btn-primary btn-sm" onclick="switchPage('adduser')">➕ کاربر جدید</button>
+            <button class="btn btn-primary btn-sm" onclick="switchPage('adduser')">➕ جدید</button>
           </div>
         </div>
+        <div class="card" style="padding:10px 20px;margin-bottom:12px;font-size:0.9em;color:var(--text-dim);" id="statsBar">📊 در حال بارگذاری...</div>
         <div class="card">
-          <div class="table-container">
-            <table>
-              <thead><tr>
-                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"/></th>
-                <th onclick="sortUsers('username')">نام کاربر <span class="sort-icon">↕</span></th>
-                <th onclick="sortUsers('remaining_days')">مانده زمان <span class="sort-icon">↕</span></th>
-                <th onclick="sortUsers('remaining_volume')">مانده حجم <span class="sort-icon">↕</span></th>
-                <th>ارتباط</th>
-                <th>وضعیت</th>
-                <th>لینک</th>
-                <th>عملیات</th>
-              </tr></thead>
-              <tbody id="usersTableBody"></tbody>
-            </table>
-          </div>
-          <p id="usersEmpty" class="empty-state" style="display:none;"><span style="font-size:2em;opacity:0.4;display:block;margin-bottom:12px;">👥</span>هیچ کاربری ثبت نشده</p>
+          <div class="table-container"><table><thead><tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"/></th>
+            <th onclick="sortUsers('username')">کاربر ↕</th>
+            <th onclick="sortUsers('remaining_days')">زمان ↕</th>
+            <th onclick="sortUsers('remaining_volume')">حجم ↕</th>
+            <th>ارتباط</th><th>وضعیت</th><th>لینک</th><th>عملیات</th>
+          </tr></thead><tbody id="usersTableBody"></tbody></table></div>
+          <p id="usersEmpty" class="empty-state" style="display:none;"><span style="font-size:2em;opacity:0.4;display:block;">👥</span>هیچ کاربری ثبت نشده</p>
         </div>
       </div>
 
       <!-- Chat Room -->
-      <div id="page-chatroom" class="page" style="display:none;">
-        <div class="admin-header"><h2>💬 چت‌روم</h2></div>
-        <div class="card"><div id="chatRoomList"></div></div>
-      </div>
+      <div id="page-chatroom" class="page" style="display:none;"><div class="admin-header"><h2>💬 چت‌روم</h2></div><div class="card"><div id="chatRoomList"></div></div></div>
 
       <!-- Add User -->
       <div id="page-adduser" class="page" style="display:none;">
@@ -75,119 +58,80 @@
         <div class="card">
           <input type="hidden" id="editUserId"/>
           <div class="form-group"><label>نام کاربری *</label><input type="text" id="userUsername" class="form-control" placeholder="نام کاربری..."/></div>
-          <div class="form-group">
-            <label>نحوه ارتباط</label>
-            <div class="btn-group">
-              <button class="btn btn-outline btn-sm active" data-contact="telegram" onclick="setContactType(this)">📱 تلگرام</button>
-              <button class="btn btn-outline btn-sm" data-contact="bale" onclick="setContactType(this)">💬 بله</button>
-              <button class="btn btn-outline btn-sm" data-contact="whatsapp" onclick="setContactType(this)">💚 واتس‌اپ</button>
-            </div>
-          </div>
-          <div class="form-group"><label>شناسه کاربری (آیدی یا شماره)</label><input type="text" id="userContactId" class="form-control" placeholder="@username یا 98912xxxxxxx" style="direction:ltr;"/></div>
-          <div class="form-group">
-            <label class="toggle-wrap"><span>حجم نامحدود</span><label class="toggle"><input type="checkbox" id="userUnlimited" onchange="toggleUnlimited()"/><span class="slider"></span></label></label>
-          </div>
+          <div class="form-group"><label>نحوه ارتباط</label><div class="btn-group">
+            <button class="btn btn-outline btn-sm active" data-contact="telegram" onclick="setContactType(this)">📱 تلگرام</button>
+            <button class="btn btn-outline btn-sm" data-contact="bale" onclick="setContactType(this)">💬 بله</button>
+            <button class="btn btn-outline btn-sm" data-contact="whatsapp" onclick="setContactType(this)">💚 واتس‌اپ</button>
+          </div></div>
+          <div class="form-group"><label>شناسه</label><input type="text" id="userContactId" class="form-control" placeholder="@username یا 98912xxxxxxx" style="direction:ltr;"/></div>
+          <div class="form-group"><label class="toggle-wrap"><span>حجم نامحدود</span><label class="toggle"><input type="checkbox" id="userUnlimited" onchange="toggleUnlimited()"/><span class="slider"></span></label></label></div>
           <div id="subLinksSection">
-            <div class="form-group"><label>لینک‌های ساب (هر خط یک لینک)</label><textarea id="userSubLinks" class="form-control" rows="3" placeholder="https://sub.example.com/sub/xxx" onblur="previewSubLinks('userSubLinks','subPreview')"></textarea></div>
+            <div class="form-group"><label>لینک‌های ساب</label><textarea id="userSubLinks" class="form-control" rows="3" placeholder="https://..."></textarea></div>
+            <button class="btn btn-outline btn-sm" onclick="checkSubPreview('add')">🔍 بررسی محتوا</button>
             <div id="subPreview" class="mt-1" style="color:var(--text-dim);font-size:0.8em;"></div>
+            <div class="form-group mt-2"><label>اشتراک VLESS دستی (زیر لینک ساب)</label><textarea id="userManualVless" class="form-control" rows="3" placeholder="vless://..."></textarea></div>
           </div>
           <div id="manualSection" style="display:none;">
             <div class="form-group"><label>تعداد روز</label><input type="number" id="userManualDays" class="form-control" value="30" min="1"/></div>
-            <div class="form-group"><label>لینک‌های VLESS (هر خط یک لینک)</label><textarea id="userVlessLinks" class="form-control" rows="3" placeholder="vless://uuid@ip:port?params#name"></textarea></div>
-            <button class="btn btn-outline btn-sm" onclick="addVlessBox()">➕ افزودن باکس جدید</button>
+            <div class="form-group"><label>لینک‌های VLESS</label><textarea id="userVlessLinks" class="form-control" rows="3" placeholder="vless://..."></textarea></div>
           </div>
-          <div class="btn-group mt-2">
-            <button class="btn btn-primary" onclick="saveUser()">💾 ذخیره</button>
-            <button class="btn btn-outline" onclick="cancelEdit()">لغو</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bulk Rename -->
-      <div id="page-bulkrename" class="page" style="display:none;">
-        <div class="admin-header"><h2>✏️ تغییر نام گروهی</h2></div>
-        <div class="card">
-          <div id="bulkRenameList"></div>
-          <button class="btn btn-primary mt-2" onclick="saveBulkRename()">💾 ذخیره همه</button>
+          <div class="btn-group mt-2"><button class="btn btn-primary" onclick="saveUser()">💾 ذخیره</button><button class="btn btn-outline" onclick="cancelEdit()">لغو</button></div>
         </div>
       </div>
 
       <!-- Backup -->
       <div id="page-backup" class="page" style="display:none;">
-        <div class="admin-header"><h2>📦 مدیریت بکاپ</h2></div>
-        <div class="card">
-          <div class="card-header">عملیات بکاپ</div>
-          <div class="btn-group"><button class="btn btn-primary" onclick="createBackup()">📦 ایجاد بکاپ</button><button class="btn btn-success" onclick="sendBackupTelegram()">📤 ارسال به تلگرام</button></div>
-        </div>
-        <div class="card">
-          <div class="card-header">بازیابی بکاپ</div>
-          <div class="file-upload-area" onclick="document.getElementById('restoreFile').click()">📁 انتخاب فایل بکاپ (zip)<input type="file" id="restoreFile" accept=".zip" onchange="restoreBackup()"/></div>
-        </div>
-        <div class="card"><div class="card-header">لیست بکاپ‌ها</div><div id="backupList" class="text-center" style="color:var(--text2);">در حال بارگذاری...</div></div>
+        <div class="admin-header"><h2>📦 بکاپ</h2></div>
+        <div class="card"><div class="card-header">عملیات</div><div class="btn-group"><button class="btn btn-primary" onclick="createBackup()">📦 ایجاد</button><button class="btn btn-success" onclick="sendBackupTelegram()">📤 ارسال به تلگرام</button></div></div>
+        <div class="card"><div class="card-header">بازیابی</div><div class="file-upload-area" onclick="document.getElementById('restoreFile').click()">📁 انتخاب فایل بکاپ<input type="file" id="restoreFile" accept=".zip" onchange="restoreBackup()"/></div></div>
+        <div class="card"><div class="card-header">لیست</div><div id="backupList" style="color:var(--text2);">در حال بارگذاری...</div></div>
       </div>
 
       <!-- Telegram -->
       <div id="page-telegram" class="page" style="display:none;">
-        <div class="admin-header"><h2>🤖 تنظیمات بات تلگرام</h2></div>
+        <div class="admin-header"><h2>🤖 تلگرام</h2></div>
         <div class="card">
           <div class="form-group"><label>توکن بات</label><input type="text" id="tgToken" class="form-control" placeholder="123456:ABC-DEF..." style="direction:ltr;"/></div>
           <div class="form-group"><label>آیدی عددی ادمین</label><input type="text" id="tgAdminId" class="form-control" placeholder="123456789" style="direction:ltr;"/></div>
-          <div class="btn-group"><button class="btn btn-outline" onclick="testTelegram()">🔌 تست اتصال</button><button class="btn btn-primary" onclick="saveTelegram()">💾 ذخیره</button></div>
+          <div class="card-header mt-2">تنظیمات پروکسی</div>
+          <div class="form-group"><label>آدرس پروکسی</label><input type="text" id="proxyUrl" class="form-control" placeholder="http://proxy:3128 یا socks5://proxy:1080" style="direction:ltr;"/></div>
+          <div class="form-group"><label>نوع پروکسی</label><select id="proxyType" class="form-control"><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select></div>
+          <div class="btn-group"><button class="btn btn-outline" onclick="testTelegram()">🔌 تست اتصال</button><button class="btn btn-outline" onclick="testProxy()">🔍 تست پروکسی</button><button class="btn btn-primary" onclick="saveTelegram()">💾 ذخیره</button></div>
           <p id="tgTestResult" class="mt-2"></p>
         </div>
       </div>
 
       <!-- Settings -->
       <div id="page-settings" class="page" style="display:none;">
-        <div class="admin-header"><h2>⚙️ تنظیمات سایت</h2></div>
+        <div class="admin-header"><h2>⚙️ تنظیمات</h2></div>
         <div class="card">
-          <div class="card-header">اطلاعات عمومی</div>
-          <div class="form-group"><label>آدرس خروجی (مثال: https://mysite.com)</label><input type="text" id="siteUrl" class="form-control" placeholder="https://example.com" style="direction:ltr;"/></div>
-          <div class="form-group"><label>آیدی پشتیبانی (برای کاربران)</label><input type="text" id="supportId" class="form-control" placeholder="@support یا 98912xxxxxxx" style="direction:ltr;"/></div>
-          <div class="form-group"><label>مسیر پنل ادمین</label><input type="text" id="panelPath" class="form-control" value="panel_h" style="direction:ltr;"/><p style="color:var(--text-dim);font-size:0.85em;">آدرس پنل: <span id="panelUrlPreview" class="url-display"></span></p></div>
-          <button class="btn btn-primary" onclick="saveAllSettings()">💾 ذخیره همه</button>
+          <div class="form-group"><label>آدرس سایت</label><input type="text" id="siteUrl" class="form-control" placeholder="https://mysite.com" style="direction:ltr;"/></div>
+          <div class="form-group"><label>آیدی پشتیبانی</label><input type="text" id="supportId" class="form-control" placeholder="@support یا 98912xxxxxxx" style="direction:ltr;"/></div>
+          <div class="form-group"><label>مسیر پنل</label><input type="text" id="panelPath" class="form-control" value="panel_h" style="direction:ltr;"/><p style="font-size:0.85em;color:var(--text-dim);">آدرس: <span id="panelUrlPreview" class="url-display"></span></p></div>
+          <button class="btn btn-primary" onclick="saveAllSettings()">💾 ذخیره</button>
         </div>
-        <div class="card">
-          <div class="card-header">گواهی SSL</div>
-          <div class="form-group"><label>فایل Certificate (cert.pem)</label><div class="file-upload-area" onclick="document.getElementById('certFile').click()">📁 انتخاب فایل cert.pem<input type="file" id="certFile" accept=".pem,.crt,.cer"/></div></div>
-          <div class="form-group"><label>فایل Private Key (key.pem)</label><div class="file-upload-area" onclick="document.getElementById('keyFile').click()">📁 انتخاب فایل key.pem<input type="file" id="keyFile" accept=".pem,.key"/></div></div>
-          <button class="btn btn-primary" onclick="uploadSSL()">💾 آپلود و ذخیره</button>
+        <div class="card"><div class="card-header">SSL</div>
+          <div class="form-group"><label>Cert</label><div class="file-upload-area" onclick="document.getElementById('certFile').click()">📁 cert.pem<input type="file" id="certFile" accept=".pem,.crt,.cer"/></div></div>
+          <div class="form-group"><label>Key</label><div class="file-upload-area" onclick="document.getElementById('keyFile').click()">📁 key.pem<input type="file" id="keyFile" accept=".pem,.key"/></div></div>
+          <button class="btn btn-primary" onclick="uploadSSL()">💾 آپلود</button>
         </div>
       </div>
 
-      <!-- Change Password -->
+      <!-- Password -->
       <div id="page-password" class="page" style="display:none;">
-        <div class="admin-header"><h2>🔑 تغییر رمز عبور</h2></div>
+        <div class="admin-header"><h2>🔑 رمز</h2></div>
         <div class="card" style="max-width:400px;">
-          <div class="form-group"><label>رمز عبور فعلی</label><input type="password" id="currentPass" class="form-control"/></div>
-          <div class="form-group"><label>رمز عبور جدید</label><input type="password" id="newPass" class="form-control"/></div>
-          <button class="btn btn-primary w-full" onclick="changePassword()">💾 ذخیره</button>
-          <p id="passResult" class="mt-2 text-center"></p>
+          <div class="form-group"><label>رمز فعلی</label><input type="password" id="currentPass" class="form-control"/></div>
+          <div class="form-group"><label>رمز جدید</label><input type="password" id="newPass" class="form-control"/></div>
+          <button class="btn btn-primary w-full" onclick="changePassword()">💾 ذخیره</button><p id="passResult" class="mt-2 text-center"></p>
         </div>
       </div>
 
       <!-- User Modal -->
-      <div id="userModal" class="modal-overlay" style="display:none;">
-        <div class="modal" style="max-width:700px;">
-          <h3 id="modalTitle">جزئیات کاربر</h3>
-          <div id="modalContent"></div>
-          <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">بستن</button><button class="btn btn-primary" onclick="saveUserFromModal()">💾 ذخیره</button></div>
-        </div>
-      </div>
+      <div id="userModal" class="modal-overlay" style="display:none;"><div class="modal" style="max-width:700px;"><h3 id="modalTitle"></h3><div id="modalContent"></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">بستن</button><button class="btn btn-primary" onclick="saveUserFromModal()">💾 ذخیره</button></div></div></div>
 
       <!-- Chat Modal -->
-      <div id="chatModal" class="modal-overlay" style="display:none;">
-        <div class="modal" style="max-width:600px;display:flex;flex-direction:column;height:80vh;">
-          <div class="flex justify-between items-center mb-2"><h3 id="chatModalTitle">چت با کاربر</h3><button class="btn btn-outline btn-sm" onclick="closeChatModal()">✕</button></div>
-          <div class="chat-messages" id="chatModalMessages" style="flex:1;"></div>
-          <div class="chat-input-area">
-            <input type="file" id="chatModalImageInput" accept="image/*" style="display:none;" onchange="sendChatImage('modal')"/>
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('chatModalImageInput').click()">📷</button>
-            <input type="text" id="chatModalInput" placeholder="پیام..." onkeydown="if(event.key==='Enter')sendChatMessage('modal')"/>
-            <button onclick="sendChatMessage('modal')">ارسال</button>
-          </div>
-        </div>
-      </div>
+      <div id="chatModal" class="modal-overlay" style="display:none;"><div class="modal" style="max-width:600px;display:flex;flex-direction:column;height:80vh;"><div class="flex justify-between items-center mb-2"><h3 id="chatModalTitle"></h3><button class="btn btn-outline btn-sm" onclick="closeChatModal()">✕</button></div><div class="chat-messages" id="chatModalMessages" style="flex:1;"></div><div class="chat-input-area"><input type="file" id="chatModalImageInput" accept="image/*" style="display:none;" onchange="sendChatImage()"/><button class="btn btn-outline btn-sm" onclick="document.getElementById('chatModalImageInput').click()">📷</button><input type="text" id="chatModalInput" placeholder="پیام..." onkeydown="if(event.key==='Enter')sendChatMsg()"/><button onclick="sendChatMsg()">ارسال</button></div></div></div>
     </main>
   </div>
 

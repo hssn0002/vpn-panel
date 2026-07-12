@@ -11,11 +11,9 @@
   <div id="loadingScreen" class="login-container"><div class="spinner"></div><span style="color:var(--text-dim);margin-right:10px;">در حال بارگذاری...</span></div>
 
   <div id="userPanel" class="user-panel" style="display:none;">
-    <div class="user-header">
-      <h1 id="userWelcome">👋 خوش آمدید</h1>
-      <p class="welcome">اطلاعات اشتراک شما</p>
-    </div>
-
+    <div class="user-header"><h1 id="userWelcome">👋 خوش آمدید</h1><p class="welcome">اطلاعات اشتراک شما</p></div>
+    <div id="statusMsg"></div>
+    
     <div class="info-card">
       <div class="info-grid">
         <div class="info-item"><div class="label">📊 مانده حجم</div><div class="value" id="remainingVolume">--</div></div>
@@ -25,20 +23,25 @@
       </div>
     </div>
 
-    <button class="copy-btn-big"><span id="copySubBtn">🔗 کپی لینک اشتراک</span></button>
+    <button class="copy-btn-big" onclick="copyAllConfigs()" id="copyAllBtn"><span>📋 کپی همه کانفیگ‌ها</span></button>
+    <button class="copy-btn-big" onclick="copySubLink()" id="copySubBtn"><span>🔗 کپی لینک اشتراک</span></button>
 
-    <!-- Chat -->
     <div class="user-chat">
       <button class="chat-toggle-btn" onclick="toggleChat()">💬 چت با پشتیبانی <span id="chatBadge" class="notif-badge" style="display:none;">0</span></button>
       <div class="chat-container" id="chatContainer">
         <div class="chat-messages" id="userChatMessages"></div>
         <div class="chat-input-area">
-          <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="sendImage()" />
+          <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="sendImage()"/>
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('imgInput').click()">📷</button>
-          <input type="text" id="chatInput" placeholder="پیام..." onkeydown="if(event.key==='Enter')sendMsg()" />
+          <input type="text" id="chatInput" placeholder="پیام..." onkeydown="if(event.key==='Enter')sendMsg()"/>
           <button onclick="sendMsg()">ارسال</button>
         </div>
       </div>
+    </div>
+
+    <div id="supportSection" class="info-card" style="text-align:center;margin-top:20px;">
+      <div class="card-header">📱 پشتیبانی</div>
+      <p style="color:var(--text-dim);" id="supportId">در حال بارگذاری...</p>
     </div>
   </div>
 
