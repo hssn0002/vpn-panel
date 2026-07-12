@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مشاوره طراحی سایت</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="landing">
+    <h1>مشاوره طراحی سایت</h1>
+    <p class="subtitle">برای مشاوره رایگان با ما در ارتباط باشید</p>
+
+    <div class="chat-widget" id="chatWidget">
+      <div class="chat-widget-header">
+        💬 چت با مشاور
+      </div>
+      <div class="chat-widget-messages" id="landingChatMessages">
+        <div class="msg-bubble msg-admin">
+          👋 سلام! به مشاوره طراحی سایت خوش آمدید.<br>
+          لطفا نام کاربری خود را وارد کنید تا بتوانیم راهنماییتان کنیم.
+          <div class="msg-time">همین الان</div>
+        </div>
+      </div>
+      <div class="chat-widget-input-area">
+        <input type="text" id="landingChatName" placeholder="نام کاربری خود را وارد کنید..." />
+        <button onclick="startLandingChat()">شروع گفتگو</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Landing page chat - registers as temporary chat, notifies admin
+    let ws;
+    let username = '';
+    let userId = null;
+
+    function addMessage(text, type, time) {
+      const container = document.getElementById('landingChatMessages');
+      const div = document.createElement('div');
+      div.className = 'msg-bubble ' + (type === 'user' ? 'msg-user' : 'msg-admin');
+      div.innerHTML = text.replace(/\n/g, '<br>') + `<div class="msg-time">${time || 'همین الان'}</div>`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function startLandingChat() {
+      const nameInput = document.getElementById('landingChatName');
+      username = nameInput.value.trim();
+      
+      if (!username) {
+        addMessage('لطفا نام کاربری خود را وارد کنید.', 'admin');
+        return;
+      }
+
+      // Try to authenticate as existing user
+      try {
+        const res = await fetch('/api/user-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          userId = data.user.id;
+          addMessage(`✅ خوش آمدید ${username}! الان میتونید پیام بفرستید.`, 'admin');
+        } else {
+          // Register as guest
+          addMessage(`✅ سلام ${username}! پیام شما دریافت شد، همکاران ما به زودی پاسخ میدهند.`, 'admin');
+        }
+      } catch (e) {
+        addMessage('خطا در ارتباط. لطفا دوباره تلاش کنید.', 'admin');
+        return;
+      }
+
+      nameInput.style.display = 'none';
+      document.querySelector('.chat-widget-input-area button').textContent = 'ارسال';
+      document.querySelector('.chat-widget-input-area button').onclick = sendLandingChat;
+      nameInput.id = 'landingChatMsg';
+      nameInput.placeholder = 'پیام خود را بنویسید...';
+      nameInput.value = '';
+      nameInput.style.display = '';
+
+      // Connect WebSocket
+      if (userId) {
+        connectWS();
+      }
+    }
+
+    function connectWS() {
+      const token = localStorage.getItem('token_' + username);
+      if (!token) return;
+      
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${location.host}/ws?token=${token}&type=user`);
+
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'chat' && msg.senderType === 'admin') {
+          addMessage(msg.message || (msg.image ? '📷 تصویر' : ''), 'admin', msg.time);
+        }
+      };
+    }
+
+    async function sendLandingChat() {
+      const input = document.getElementById('landingChatMsg');
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMessage(text, 'user');
+
+      if (userId) {
+        const token = localStorage.getItem('token_' + username);
+        if (token) {
+          try {
+            await fetch(`/api/users/${userId}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ message: text })
+            });
+          } catch (e) {}
+        }
+      }
+
+      input.value = '';
+    }
+
+    // Enter key to send
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && document.activeElement?.id === 'landingChatMsg') {
+        sendLandingChat();
+      }
+    });
+  </script>
+</body>
+</html>

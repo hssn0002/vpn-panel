@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پریویو - پنل مدیریت VPN</title>
+<style>
+/* ═══════ FULL CSS (same as project) ═══════ */
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+:root {
+  --bg-deep: #070b15; --bg: #0c1020; --bg-card: #12162b; --bg-elevated: #181d35; --bg-field: #0e1225;
+  --accent: #7c3aed; --accent-glow: #a78bfa; --accent-light: #c4b5fd; --accent2: #06b6d4; --accent2-glow: #22d3ee;
+  --green: #10b981; --green-glow: #34d399; --red: #ef4444; --red-glow: #f87171; --orange: #f59e0b; --orange-glow: #fbbf24;
+  --text: #e2e8f0; --text-dim: #94a3b8; --text-muted: #64748b;
+  --border: rgba(148,163,184,0.08); --border-glow: rgba(124,58,237,0.3);
+  --glass: rgba(18,22,43,0.7); --glass-border: rgba(255,255,255,0.06);
+  --radius-sm: 10px; --radius: 16px; --radius-lg: 20px; --radius-xl: 24px;
+  --ease-out: cubic-bezier(0.16,1,0.3,1); --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+  --dur: 250ms; --dur-fast: 150ms; --dur-slow: 400ms;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4),0 0 0 1px rgba(255,255,255,0.02);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03);
+  --shadow-glow: 0 0 30px rgba(124,58,237,0.15);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif;background:var(--bg-deep);color:var(--text);direction:rtl;min-height:100vh;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(124,58,237,0.08) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 100%,rgba(6,182,212,0.06) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 50% 50%,rgba(124,58,237,0.04) 0%,transparent 70%);pointer-events:none;z-index:0;animation:bgPulse 8s ease-in-out infinite alternate}
+@keyframes bgPulse{0%{opacity:.8}100%{opacity:1}}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 70%)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(124,58,237,.4);border-radius:10px}
+.landing{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center}
+.landing h1{font-size:clamp(2em,5vw,3.2em);font-weight:900;background:linear-gradient(135deg,var(--accent-light) 0%,var(--accent) 30%,var(--accent2) 70%,var(--accent2-glow) 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:16px;animation:shimmer 4s ease-in-out infinite}
+@keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:200% center}}
+.landing .subtitle{color:var(--text-dim);font-size:1.15em;margin-bottom:48px;max-width:500px;animation:fadeInUp .8s var(--ease-out) .2s both}
+.landing .subtitle::after{content:'';display:block;width:60px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;margin:20px auto 0}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Chat Widget */
+.chat-widget{position:relative;z-index:1;background:var(--glass);backdrop-filter:blur(20px);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:480px;overflow:hidden;border:1px solid var(--glass-border);animation:fadeInUp .8s var(--ease-out) .4s both;transition:box-shadow var(--dur) var(--ease-out)}
+.chat-widget:hover{box-shadow:var(--shadow-lg),var(--shadow-glow);border-color:var(--border-glow)}
+.chat-widget-header{background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(6,182,212,.8));padding:18px 24px;font-weight:700;font-size:1.05em;color:#fff;display:flex;align-items:center;gap:10px}
+.chat-widget-header::before{content:'';width:10px;height:10px;background:#10b981;border-radius:50%;box-shadow:0 0 10px #10b981;animation:statusPulse 2s ease-in-out infinite}
+@keyframes statusPulse{0%,100%{box-shadow:0 0 6px #10b981}50%{box-shadow:0 0 16px #10b981,0 0 24px rgba(16,185,129,.4)}}
+.chat-widget-messages{height:380px;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,rgba(12,16,32,.3) 0%,rgba(12,16,32,.6) 100%)}
+.chat-widget-input-area{display:flex;padding:14px 16px;border-top:1px solid var(--border);gap:10px;background:rgba(12,16,32,.8)}
+.chat-widget-input-area input{flex:1;background:var(--bg-field);border:1px solid var(--border);color:var(--text);padding:13px 18px;border-radius:30px;font-size:.95em;outline:none;font-family:inherit}
+.chat-widget-input-area input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.chat-widget-input-area button{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;border:none;padding:13px 28px;border-radius:30px;cursor:pointer;font-size:.95em;font-family:inherit;font-weight:600;transition:all var(--dur) var(--ease-spring)}
+.chat-widget-input-area button:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(124,58,237,.4)}
+.msg-bubble{max-width:80%;padding:13px 18px;border-radius:18px;word-wrap:break-word;font-size:.93em;line-height:1.7;animation:msgIn .35s var(--ease-spring) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.msg-user{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;align-self:flex-end;border-bottom-right-radius:6px;box-shadow:0 4px 15px rgba(124,58,237,.3)}
+.msg-admin{background:var(--bg-elevated);color:var(--text);align-self:flex-start;border-bottom-left-radius:6px;border:1px solid var(--border)}
+.msg-time{font-size:.68em;opacity:.55;margin-top:6px;direction:ltr;text-align:left}
+
+/* Admin */
+.admin-layout{display:flex;min-height:100vh;position:relative;z-index:1}
+.admin-sidebar{width:280px;background:linear-gradient(180deg,var(--bg-card) 0%,rgba(12,16,32,.95) 100%);backdrop-filter:blur(20px);border-left:1px solid var(--border);padding:24px 0;position:fixed;right:0;top:0;bottom:0;overflow-y:auto;z-index:100;box-shadow:4px 0 30px rgba(0,0,0,.3)}
+.admin-sidebar .logo{padding:0 24px 24px;margin-bottom:12px;font-size:1.35em;font-weight:900;background:linear-gradient(135deg,var(--accent-light),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.admin-sidebar nav{display:flex;flex-direction:column;gap:2px;padding:0 12px}
+.admin-sidebar nav a{display:flex;align-items:center;gap:12px;padding:13px 16px;color:var(--text-dim);text-decoration:none;transition:all var(--dur) var(--ease-out);font-size:.93em;border-radius:var(--radius-sm);font-weight:500}
+.admin-sidebar nav a:hover,.admin-sidebar nav a.active{background:linear-gradient(90deg,rgba(124,58,237,.15),rgba(124,58,237,.05));color:#fff;font-weight:600}
+.admin-main{flex:1;margin-right:280px;padding:32px;animation:fadeIn .5s var(--ease-out)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:16px}
+.admin-header h2{font-size:1.6em;font-weight:800}
+.admin-header h2::after{content:'';display:block;width:40px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;margin-top:8px}
+
+/* Cards & Tables */
+.card{background:var(--glass);backdrop-filter:blur(20px);border-radius:var(--radius-lg);border:1px solid var(--glass-border);padding:24px;margin-bottom:20px;transition:all var(--dur) var(--ease-out)}
+.card:hover{border-color:var(--border-glow);box-shadow:var(--shadow),var(--shadow-glow)}
+.card-header{font-size:1.1em;font-weight:700;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.table-container{overflow-x:auto;border-radius:var(--radius-sm)}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th{background:var(--bg-elevated);padding:14px 18px;text-align:right;font-weight:600;font-size:.85em;color:var(--text-dim);cursor:pointer;white-space:nowrap;border-bottom:2px solid var(--border)}
+td{padding:14px 18px;border-bottom:1px solid var(--border);font-size:.9em;transition:all var(--dur-fast) var(--ease-out)}
+tr:hover td{background:rgba(124,58,237,.04)}
+tr.error-row td{background:rgba(239,68,68,.06);border-bottom-color:rgba(239,68,68,.15)}
+
+/* Buttons */
+.btn{padding:10px 20px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:.9em;transition:all var(--dur) var(--ease-spring);font-family:inherit;display:inline-flex;align-items:center;gap:8px;font-weight:500}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;box-shadow:0 4px 15px rgba(124,58,237,.25)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(124,58,237,.4)}
+.btn-danger{background:linear-gradient(135deg,var(--red),#dc2626);color:#fff}
+.btn-success{background:linear-gradient(135deg,var(--green),#059669);color:#fff;box-shadow:0 4px 15px rgba(16,185,129,.2)}
+.btn-outline{background:transparent;border:1.5px solid rgba(148,163,184,.2);color:var(--text-dim)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent-light);background:rgba(124,58,237,.06)}
+.btn-sm{padding:6px 14px;font-size:.82em;border-radius:8px}
+.btn-lg{padding:15px 32px;font-size:1.05em;border-radius:var(--radius);font-weight:600}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Badges */
+.badge{padding:5px 12px;border-radius:20px;font-size:.78em;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.badge-success{background:rgba(16,185,129,.12);color:var(--green-glow);border:1px solid rgba(16,185,129,.2)}
+.badge-danger{background:rgba(239,68,68,.12);color:var(--red-glow);border:1px solid rgba(239,68,68,.2)}
+.badge-warning{background:rgba(245,158,11,.12);color:var(--orange-glow);border:1px solid rgba(245,158,11,.2)}
+.blink{animation:blinkPulse 1.2s ease-in-out infinite}
+@keyframes blinkPulse{0%,100%{opacity:1;box-shadow:0 0 8px rgba(239,68,68,.3)}50%{opacity:.5;box-shadow:0 0 20px rgba(239,68,68,.6)}}
+
+/* User Panel */
+.user-panel{max-width:640px;margin:0 auto;padding:24px;position:relative;z-index:1}
+.user-header{text-align:center;padding:60px 24px 40px}
+.user-header h1{font-size:2em;font-weight:800;margin-bottom:10px;background:linear-gradient(135deg,var(--text),var(--accent-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.user-header .welcome{color:var(--text-dim)}
+.info-card{background:var(--glass);backdrop-filter:blur(20px);border-radius:var(--radius-lg);border:1px solid var(--glass-border);padding:28px;margin-bottom:18px;transition:all var(--dur) var(--ease-out)}
+.info-card:hover{border-color:var(--border-glow);box-shadow:var(--shadow-glow)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.info-item{text-align:center;padding:20px 16px;background:var(--bg-elevated);border-radius:var(--radius);border:1px solid var(--border);transition:all var(--dur) var(--ease-out)}
+.info-item:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3);border-color:var(--border-glow)}
+.info-item .label{font-size:.78em;color:var(--text-muted);margin-bottom:10px;font-weight:500}
+.info-item .value{font-size:clamp(1.4em,4vw,1.8em);font-weight:800}
+.info-item .value.success{color:var(--green-glow)}.info-item .value.danger{color:var(--red-glow)}.info-item .value.warning{color:var(--orange-glow)}
+
+/* Copy Buttons */
+.copy-btn-big{width:100%;padding:18px;border-radius:var(--radius);border:2px solid rgba(124,58,237,.25);background:rgba(124,58,237,.05);color:var(--text);font-size:1em;cursor:pointer;transition:all var(--dur) var(--ease-spring);font-family:inherit;margin-bottom:12px;text-align:center;display:block;font-weight:600}
+.copy-btn-big:hover{border-color:var(--accent);color:#fff;transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.3)}
+.chat-toggle-btn{width:100%;padding:16px;background:var(--glass);border:1.5px solid rgba(148,163,184,.12);color:var(--text);border-radius:var(--radius);cursor:pointer;font-size:1em;text-align:center;font-weight:600;margin-top:20px;font-family:inherit}
+.chat-toggle-btn:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(124,58,237,.12)}
+
+/* Tabs */
+.tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;position:relative;z-index:2}
+.tab-btn{padding:12px 24px;border-radius:var(--radius-sm);border:1.5px solid rgba(148,163,184,.15);background:transparent;color:var(--text-dim);cursor:pointer;font-family:inherit;font-size:.93em;font-weight:500;transition:all var(--dur) var(--ease-out)}
+.tab-btn:hover{border-color:var(--accent);color:var(--text)}
+.tab-btn.active{background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(124,58,237,.08));border-color:var(--accent);color:#fff;box-shadow:0 0 20px rgba(124,58,237,.15)}
+.tab-content{display:none;position:relative;z-index:1;animation:fadeIn .4s var(--ease-out)}
+.tab-content.active{display:block}
+
+/* Login */
+.login-box{background:var(--glass);backdrop-filter:blur(24px);border-radius:var(--radius-xl);border:1px solid var(--glass-border);padding:48px 40px;width:100%;max-width:420px;box-shadow:var(--shadow-lg);margin:100px auto}
+.login-box h2{text-align:center;margin-bottom:32px;font-size:1.5em;font-weight:800}
+.login-box h2::after{content:'';display:block;width:50px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;margin:14px auto 0}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;margin-bottom:8px;font-size:.88em;color:var(--text-dim);font-weight:500}
+.form-control{width:100%;padding:12px 16px;background:var(--bg-field);border:1.5px solid rgba(148,163,184,.12);color:var(--text);border-radius:var(--radius-sm);font-size:.93em;outline:none;font-family:inherit}
+.form-control:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,58,237,.1)}
+.config-list{background:var(--bg-field);border-radius:var(--radius-sm);padding:18px;max-height:320px;overflow-y:auto;font-family:'Consolas',monospace;font-size:.82em;white-space:pre-wrap;word-break:break-all;line-height:2;border:1px solid var(--border);color:var(--text-dim)}
+
+/* Responsive */
+@media(max-width:768px){.admin-sidebar{width:100%;height:auto;position:relative;border-left:none;border-bottom:1px solid var(--border)}.admin-sidebar nav{flex-direction:row;overflow-x:auto;gap:4px;padding:0 8px}.admin-sidebar nav a{padding:8px 14px;font-size:.78em;flex-shrink:0}.admin-main{margin-right:0;padding:16px}.info-grid{grid-template-columns:1fr}.landing h1{font-size:1.6em}}
+.w-full{width:100%}.text-center{text-align:center}.text-green{color:var(--green-glow)}.text-red{color:var(--red-glow)}.text-orange{color:var(--orange-glow)}.mt-2{margin-top:16px}.mb-2{margin-bottom:16px}.flex{display:flex}.justify-between{justify-content:space-between}.items-center{align-items:center}.gap-1{gap:8px}
+</style>
+</head>
+<body>
+
+<!-- ═══ TABS ═══ -->
+<div style="position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:999;display:flex;gap:8px;background:var(--bg-card);padding:8px 12px;border-radius:30px;border:1px solid var(--border);backdrop-filter:blur(20px)">
+  <button class="tab-btn active" onclick="switchTab('landing')">🏠 صفحه اصلی</button>
+  <button class="tab-btn" onclick="switchTab('login')">🔐 لاگین ادمین</button>
+  <button class="tab-btn" onclick="switchTab('admin')">👥 پنل ادمین</button>
+  <button class="tab-btn" onclick="switchTab('user')">👤 پنل کاربر</button>
+</div>
+
+<!-- ═══ LANDING ═══ -->
+<div class="tab-content active" id="tab-landing">
+  <div class="landing">
+    <h1>مشاوره طراحی سایت</h1>
+    <p class="subtitle">برای مشاوره رایگان با ما در ارتباط باشید</p>
+    <div class="chat-widget">
+      <div class="chat-widget-header">💬 چت با مشاور</div>
+      <div class="chat-widget-messages">
+        <div class="msg-bubble msg-admin">👋 سلام! به مشاوره طراحی سایت خوش آمدید. لطفا نام کاربری خود را وارد کنید.<div class="msg-time">12:00</div></div>
+        <div class="msg-bubble msg-user">سلام، من علی هستم. برای طراحی سایت فروشگاهی راهنمایی میخوام.<div class="msg-time">12:01</div></div>
+        <div class="msg-bubble msg-admin">سلام علی جان! بله حتما. چه نوع فروشگاهی مد نظرتونه؟ وردپرس یا اختصاصی؟<div class="msg-time">12:02</div></div>
+        <div class="msg-bubble msg-user">میخوام اختصاصی باشه. با پنل مدیریت قوی.<div class="msg-time">12:03</div></div>
+      </div>
+      <div class="chat-widget-input-area">
+        <input type="text" placeholder="پیام خود را بنویسید..." />
+        <button>ارسال</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="tab-content" id="tab-login">
+  <div class="login-box">
+    <h2>🔐 ورود به پنل مدیریت</h2>
+    <div class="form-group"><label>رمز عبور</label><input class="form-control" type="password" value="427726" /></div>
+    <button class="btn btn-primary btn-lg w-full" onclick="switchTab('admin')">ورود</button>
+  </div>
+</div>
+
+<!-- ═══ ADMIN PANEL ═══ -->
+<div class="tab-content" id="tab-admin">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="logo">⚡ پنل مدیریت</div>
+      <nav>
+        <a href="#" class="active">👥 کاربران</a>
+        <a href="#">💬 چت‌روم <span class="badge badge-danger" style="margin-right:auto">3</span></a>
+        <a href="#">➕ کاربر جدید</a>
+        <a href="#">📦 بکاپ</a>
+        <a href="#">🤖 بات تلگرام</a>
+        <a href="#">⚙️ تنظیمات</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <div class="admin-header">
+        <h2>👥 لیست کاربران</h2>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm">🔄 بروزرسانی همه</button>
+          <button class="btn btn-danger btn-sm">🗑️ حذف انتخاب شده (2)</button>
+          <button class="btn btn-primary btn-sm">➕ کاربر جدید</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked /></th>
+                <th>نام کاربر ↕</th>
+                <th>مانده زمان ↕</th>
+                <th>مانده حجم</th>
+                <th>ارتباط</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="error-row"><td><input type="checkbox" checked /></td><td><strong>user_01</strong></td><td class="text-red">0 روز</td><td>0 B</td><td>@test</td><td><span class="badge badge-danger blink">⚠ خطا</span></td><td><div class="btn-group"><button class="btn btn-outline btn-sm">✏️</button><button class="btn btn-outline btn-sm">🔄</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td><input type="checkbox" checked /></td><td><strong>user_02</strong></td><td class="text-orange">3 روز</td><td>1.5 GB</td><td>@user2</td><td><span class="badge badge-warning">⚠ کم</span></td><td><div class="btn-group"><button class="btn btn-outline btn-sm">✏️</button><button class="btn btn-outline btn-sm">🔄</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td><input type="checkbox" /></td><td><strong>user_03</strong></td><td class="text-green">30 روز</td><td>20 GB</td><td>@user3</td><td><span class="badge badge-success">فعال</span></td><td><div class="btn-group"><button class="btn btn-outline btn-sm">✏️</button><button class="btn btn-outline btn-sm">🔄</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td><input type="checkbox" /></td><td><strong>user_04</strong></td><td class="text-green">28 روز</td><td>19.9 GB</td><td>@user4</td><td><span class="badge badge-success">فعال</span></td><td><div class="btn-group"><button class="btn btn-outline btn-sm">✏️</button><button class="btn btn-outline btn-sm">🔄</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td><input type="checkbox" /></td><td><strong>user_05</strong></td><td class="text-green">24 روز</td><td>8 GB</td><td>@user5</td><td><span class="badge badge-success">فعال</span></td><td><div class="btn-group"><button class="btn btn-outline btn-sm">✏️</button><button class="btn btn-outline btn-sm">🔄</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td><input type="checkbox" /></td><td><strong>user_06</strong></td><td class="textgreen">∞</td><td>نامحدود</td><td>@user6</td><td><span class="badge badge-success">فعال</span></td><td><div class="btn-group"><button class="btn btn-outline btn-sm">✏️</button><button class="btn btn-outline btn-sm">🔄</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ USER PANEL ═══ -->
+<div class="tab-content" id="tab-user">
+  <div class="user-panel">
+    <div class="user-header">
+      <h1>👋 user_03 عزیز، خوش آمدید</h1>
+      <p class="welcome">اطلاعات اشتراک شما</p>
+    </div>
+    <div class="info-card">
+      <div class="info-grid">
+        <div class="info-item"><div class="label">📊 مانده حجم</div><div class="value success">20 GB</div></div>
+        <div class="info-item"><div class="label">⏳ مانده زمان</div><div class="value success">30 روز</div></div>
+        <div class="info-item"><div class="label">📦 حجم کل</div><div class="value" style="font-size:1em;color:var(--text-dim)">20 GB</div></div>
+        <div class="info-item"><div class="label">📋 تعداد کانفیگ</div><div class="value" style="font-size:1em;color:var(--text-dim)">22 عدد</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-header">⚡ کانفیگ‌ها</div>
+      <div class="config-list">vless://abc123@1.2.3.4:443?security=tls&type=ws&path=/ws#IR-Test1
+vless://def456@5.6.7.8:2052?encryption=none&host=test.com#IR-Test2
+vless://ghi789@10.0.0.1:8080?security=none&type=tcp#DE-Test3</div>
+      <button class="copy-btn-big mt-2"><span>📋 کپی همه کانفیگ‌ها</span></button>
+      <button class="copy-btn-big"><span>🔗 کپی لینک ساب</span></button>
+    </div>
+    <button class="chat-toggle-btn">💬 چت با پشتیبانی <span class="badge badge-danger" style="margin-right:8px">2</span></button>
+  </div>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

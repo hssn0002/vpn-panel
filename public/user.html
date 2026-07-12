@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل کاربر</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="loadingScreen" class="login-container">
+    <div class="spinner"></div>
+    <span style="color:var(--text2);margin-right:10px;">در حال بارگذاری...</span>
+  </div>
+
+  <div id="userPanel" class="user-panel" style="display:none;">
+    <div class="user-header">
+      <h1 id="userWelcome">👋 خوش آمدید</h1>
+      <p class="welcome">اطلاعات اشتراک شما</p>
+    </div>
+
+    <!-- Usage Info -->
+    <div class="info-card">
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">📊 مانده حجم</div>
+          <div class="value" id="remainingVolume">--</div>
+        </div>
+        <div class="info-item">
+          <div class="label">⏳ مانده زمان</div>
+          <div class="value" id="remainingDays">--</div>
+        </div>
+        <div class="info-item">
+          <div class="label">📦 حجم کل</div>
+          <div class="value" id="totalVolume" style="font-size:1em;color:var(--text2);">--</div>
+        </div>
+        <div class="info-item">
+          <div class="label">📋 تعداد کانفیگ</div>
+          <div class="value" id="configCount" style="font-size:1em;color:var(--text2);">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configs Section -->
+    <div class="info-card" id="configsCard">
+      <div class="card-header">⚡ کانفیگ‌ها</div>
+      <div class="config-list" id="configList">در حال بارگذاری...</div>
+      <button class="copy-btn-big mt-2" onclick="copyAllConfigs()" id="copyAllBtn"><span>📋 کپی همه کانفیگ‌ها</span></button>
+      <button class="copy-btn-big" onclick="copySubLink()"><span>🔗 کپی لینک ساب</span></button>
+    </div>
+
+    <!-- Chat Section -->
+    <div class="user-chat">
+      <button class="chat-toggle-btn" onclick="toggleChat()">
+        💬 چت با پشتیبانی
+        <span id="chatNotifBadge" class="notif-badge" style="display:none;margin-right:8px;">0</span>
+      </button>
+      <div class="chat-container" id="chatContainer">
+        <div class="chat-messages" id="userChatMessages">
+          <div class="msg-bubble msg-admin">
+            👋 سلام! اگر سوالی دارید بپرسید، همکاران ما پاسخگو هستند.
+            <div class="msg-time">--</div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input type="file" id="userImageInput" accept="image/*" style="display:none;" onchange="sendUserImage()" />
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('userImageInput').click()">📷</button>
+          <input type="text" id="userChatInput" placeholder="پیام خود را بنویسید..." onkeydown="if(event.key==='Enter')sendUserChat()" />
+          <button onclick="sendUserChat()">ارسال</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Support Links -->
+    <div class="info-card" id="supportCard" style="display:none;">
+      <div class="card-header">📱 ارتباط با پشتیبانی</div>
+      <div id="supportLinks" class="btn-group"></div>
+    </div>
+  </div>
+
+  <script src="/js/user.js"></script>
+</body>
+</html>

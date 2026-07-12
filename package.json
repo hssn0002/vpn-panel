@@ -1,0 +1,20 @@
+{
+  "name": "vpn-user-panel",
+  "version": "1.0.0",
+  "description": "Standalone VPN User Management Panel with Telegram Backup",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "npm install"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "better-sqlite3": "^11.3.0",
+    "ws": "^8.18.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "multer": "^1.4.5-lts.1",
+    "archiver": "^7.0.1",
+    "node-cron": "^3.0.3"
+  }
+}
