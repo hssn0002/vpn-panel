@@ -196,6 +196,72 @@ app.post('/api/sub-preview', auth, adminOnly, async (req, res) => {
   try { res.json(await subParser.parseSubscription(url)); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ═══ Fetch configs list for a user + apply overrides ═══
+app.get('/api/users/:id/configs-preview', auth, adminOnly, async (req, res) => {
+  const u = db.getUserById(req.params.id);
+  if (!u) return res.status(404).json();
+  
+  const overrides = safeJSON(u.config_overrides, {});
+  let allConfigs = [];
+  
+  // Fetch from subscription links
+  const subLinks = safeJSON(u.subscription_links, []);
+  for (const link of subLinks) {
+    try {
+      const result = await subParser.parseSubscription(link);
+      if (result.allConfigs?.length) allConfigs = allConfigs.concat(result.allConfigs);
+    } catch {}
+  }
+  // Add manual vless
+  allConfigs = allConfigs.concat(safeJSON(u.manual_vless, []));
+  // Add unlimited vless
+  allConfigs = allConfigs.concat(safeJSON(u.vless_links, []));
+  
+  // Apply overrides and build list
+  const configs = allConfigs.map(c => {
+    const ov = overrides[c] || {};
+    // Extract name from config string
+    const nameMatch = c.match(/#(.+)$/);
+    const originalName = nameMatch ? nameMatch[1] : (c.substring(0, 40) + '...');
+    return {
+      config: c,
+      name: ov.name || originalName,
+      originalName,
+      hidden: !!ov.hidden,
+      modified: !!ov.modified
+    };
+  });
+  
+  res.json({ configs, count: configs.filter(c => !c.hidden).length, total: configs.length });
+});
+
+// ═══ Save config overrides ═══
+app.post('/api/users/:id/config-overrides', auth, adminOnly, (req, res) => {
+  const { overrides, bulkRename, bulkRenameText } = req.body;
+  const u = db.getUserById(req.params.id);
+  if (!u) return res.status(404).json();
+  
+  let ov = safeJSON(u.config_overrides, {});
+  
+  if (bulkRename && bulkRenameText) {
+    // Bulk rename: apply prefix/suffix to all configs
+    const allConfigs = [];
+    const subLinks = safeJSON(u.subscription_links, []);
+    // We need to fetch configs... but for simplicity, just update existing overrides
+    for (const [key, val] of Object.entries(ov)) {
+      ov[key] = { ...val, name: bulkRenameText, modified: true };
+    }
+    // Also apply to any configs without override by adding them
+    // This is best-effort: rename configs we already know about
+  } else if (overrides) {
+    // Individual overrides (hide/show/rename)
+    ov = { ...ov, ...overrides };
+  }
+  
+  db.updateUser(req.params.id, { config_overrides: JSON.stringify(ov) });
+  res.json({ success: true });
+});
+
 // ═══ Messages ═══
 app.get('/api/messages/:uid', auth, (req, res) => {
   res.json(db.getMessages(req.params.uid, parseInt(req.query.limit) || 300));
@@ -249,6 +315,11 @@ app.get('/sub/:username', async (req, res) => {
   const vless = safeJSON(u.vless_links, []);
   allConfigs = allConfigs.concat(vless);
 
+  // Apply overrides: hide and rename
+  const ov = safeJSON(u.config_overrides, {});
+  allConfigs = allConfigs.filter(c => !(ov[c]?.hidden));
+  allConfigs = allConfigs.map(c => ov[c]?.name ? c.replace(/#.+$/, '#' + ov[c].name) : c);
+
   if (!allConfigs.length) return res.send('');
   
   const body = allConfigs.join('\n');
@@ -285,7 +356,13 @@ app.get('/api/me/configs', auth, async (req, res) => {
   }
   allConfigs = allConfigs.concat(safeJSON(u.manual_vless, []));
   allConfigs = allConfigs.concat(safeJSON(u.vless_links, []));
-  res.json({ configs: allConfigs, count: allConfigs.length });
+  
+  // Apply overrides: hide and rename
+  const ov = safeJSON(u.config_overrides, {});
+  const visible = allConfigs.filter(c => !(ov[c]?.hidden));
+  const renamed = visible.map(c => ov[c]?.name ? c.replace(/#.+$/, '#' + ov[c].name) : c);
+  
+  res.json({ configs: renamed, count: renamed.length });
 });
 
 app.get('/api/me/messages', auth, (req, res) => res.json(db.getMessages(req.user.userId, 300)));
@@ -363,7 +440,7 @@ app.get('/' + (db.getSetting('panel_path') || 'panel_h'), (req, res) => res.send
 // ═══ Helpers ═══
 function sanitizeUser(u) {
   if (!u) return null;
-  return { ...u, subscription_links: safeJSON(u.subscription_links, []), manual_vless: safeJSON(u.manual_vless, []), vless_links: safeJSON(u.vless_links, []), last_data: safeJSON(u.last_data, {}) };
+  return { ...u, subscription_links: safeJSON(u.subscription_links, []), manual_vless: safeJSON(u.manual_vless, []), vless_links: safeJSON(u.vless_links, []), last_data: safeJSON(u.last_data, {}), config_overrides: safeJSON(u.config_overrides, {}) };
 }
 function safeJSON(s, fb) { try { return JSON.parse(s || ''); } catch { return fb; } }
 function parseVolToBytes(s) {

@@ -70,6 +70,7 @@ safeMigrate('manual_vless', "TEXT DEFAULT '[]'");
 safeMigrate('suspended', 'INTEGER DEFAULT 0');
 safeMigrate('error_acked', 'INTEGER DEFAULT 0');
 safeMigrate('display_name', "TEXT DEFAULT ''");
+safeMigrate('config_overrides', "TEXT DEFAULT '{}'");
 
 const defaultSettings = {
   admin_password: '$2a$10$dummy_hash_for_427726',
@@ -105,7 +106,7 @@ function createUser(data) {
 function updateUser(id, data) {
   const allowed = ['username','display_name','contact_type','contact_id','subscription_links','manual_vless','unlimited_volume',
     'manual_days','vless_links','remaining_volume','remaining_days','total_volume',
-    'total_days','used_volume','last_checked','sub_error','error_acked','suspended','last_data'];
+    'total_days','used_volume','last_checked','sub_error','error_acked','suspended','last_data','config_overrides'];
   const fields = [], values = {};
   for (const [k, v] of Object.entries(data)) {
     if (allowed.includes(k)) { fields.push(`${k}=@${k}`); values[k] = v; }

@@ -173,7 +173,7 @@ function renderUserModal(user){
     <div class="form-group"><label class="toggle-wrap"><span>حجم نامحدود</span><label class="toggle"><input type="checkbox" id="modalUnlimited" ${user.unlimited_volume?'checked':''} onchange="toggleModalUnlimited()"/><span class="slider"></span></label></label></div>
     <div id="modalSubSection" style="display:${user.unlimited_volume?'none':'block'};">
       <div class="form-group"><label>لینک‌های ساب (هر خط یک لینک)</label><textarea id="modalSubLinks" class="form-control" rows="3">${esc(links)}</textarea></div>
-      <button class="btn btn-outline btn-sm" onclick="checkSubPreview('modal')">🔍 بررسی محتوا</button>
+      <button class="btn btn-outline btn-sm" onclick="loadConfigList('modal')">🔍 مشاهده و مدیریت کانفیگ‌ها</button>
       <div id="modalSubPreview" class="mt-1" style="color:var(--text-dim);font-size:0.8em;"></div>
       <div class="form-group mt-2"><label>اشتراک‌های VLESS دستی (هر خط یک لینک)</label><textarea id="modalManualVless" class="form-control" rows="3">${esc(manualVless)}</textarea></div>
     </div>
@@ -233,6 +233,85 @@ async function saveUserFromModal(){
   closeModal();loadUsers();
 }
 function closeModal(){document.getElementById('userModal').style.display='none';API.editingUserId=null;}
+
+// ═══ Config List Management ═══
+async function loadConfigList(source){
+  const uid=API.editingUserId;if(!uid)return;
+  const prev=document.getElementById('modalSubPreview');
+  if(!prev)return;
+  prev.innerHTML='<div class="spinner"></div> در حال دریافت کانفیگ‌ها...';
+  try{
+    const res=await fetch(`/api/users/${uid}/configs-preview`,{headers:authHeaders()});
+    const data=await res.json();
+    if(!data.configs?.length){prev.innerHTML='<p style="color:var(--text-dim);">کانفیگی یافت نشد</p>';return;}
+    
+    let html='<div class="card-header" style="font-size:0.9em;">📋 لیست کانفیگ‌ها ('+data.total+' عدد — '+data.count+' فعال)</div>';
+    html+='<div class="form-group"><input type="text" id="bulkRenameInput" class="form-control" placeholder="✏️ اسم جدید برای همه کانفیگ‌ها (اختیاری)" style="font-size:0.85em;direction:ltr;"/><button class="btn btn-outline btn-sm mt-1" onclick="bulkRenameConfigs()">اعمال نام روی همه</button></div>';
+    html+='<div style="max-height:350px;overflow-y:auto;">';
+    data.configs.forEach((c,i)=>{
+      const ch=c.hidden?'':'checked';
+      html+=`<div class="flex items-center justify-between" style="padding:6px 8px;margin:2px 0;background:${c.hidden?'rgba(239,68,68,0.05)':'var(--bg)'};border-radius:6px;border:1px solid var(--border);">
+        <label class="flex items-center gap-1" style="flex:1;cursor:pointer;font-size:0.78em;word-break:break-all;">
+          <input type="checkbox" ${ch} data-config="${esc(c.config)}" onchange="toggleConfigVisibility(this)"/>
+          <span style="color:${c.hidden?'var(--text-muted)':'var(--text-dim)'};">${esc(c.name||c.originalName)}</span>
+        </label>
+        <input type="text" class="form-control" style="width:120px;padding:2px 6px;font-size:0.7em;direction:ltr;" value="${esc(c.name||'')}" placeholder="نام..." data-config="${esc(c.config)}" onchange="renameConfig(this)"/>
+      </div>`;
+    });
+    html+='</div>';
+    html+='<button class="btn btn-primary btn-sm mt-2" onclick="saveConfigOverrides('+uid+')">💾 ذخیره تغییرات کانفیگ‌ها</button>';
+    prev.innerHTML=html;
+  }catch{prev.innerHTML='<p class="text-red">خطا در دریافت کانفیگ‌ها</p>';}
+}
+
+// Track changes locally before save
+window._configChanges={};
+
+function toggleConfigVisibility(cb){
+  const cfg=cb.dataset.config;
+  window._configChanges[cfg]=window._configChanges[cfg]||{};
+  window._configChanges[cfg].hidden=!cb.checked;
+  cb.parentElement.querySelector('span').style.color=cb.checked?'var(--text-dim)':'var(--text-muted)';
+  cb.closest('.flex').style.background=cb.checked?'var(--bg)':'rgba(239,68,68,0.05)';
+}
+
+function renameConfig(inp){
+  const cfg=inp.dataset.config,val=inp.value.trim();
+  window._configChanges[cfg]=window._configChanges[cfg]||{};
+  if(val)window._configChanges[cfg].name=val;
+  else delete window._configChanges[cfg].name;
+}
+
+async function bulkRenameConfigs(){
+  const inp=document.getElementById('bulkRenameInput');
+  if(!inp||!inp.value.trim())return;
+  const name=inp.value.trim();
+  const cbs=document.querySelectorAll('#modalSubPreview input[type="checkbox"]');
+  cbs.forEach(cb=>{
+    const cfg=cb.dataset.config;
+    window._configChanges[cfg]=window._configChanges[cfg]||{};
+    window._configChanges[cfg].name=name;
+  });
+  // Also update visible text inputs
+  document.querySelectorAll('#modalSubPreview input[type="text"]').forEach(inp=>{inp.value=name;});
+  alert('✅ نام جدید روی '+cbs.length+' کانفیگ اعمال شد. دکمه ذخیره را بزنید.');
+}
+
+async function saveConfigOverrides(uid){
+  const btn=event.target;btn.disabled=true;btn.textContent='⏳ در حال ذخیره...';
+  try{
+    const res=await fetch(`/api/users/${uid}/config-overrides`,{
+      method:'POST',headers:authHeaders(),
+      body:JSON.stringify({overrides:window._configChanges})
+    });
+    if(res.ok){
+      window._configChanges={};
+      alert('✅ تغییرات کانفیگ‌ها ذخیره شد');
+      loadConfigList('modal');
+    }else alert('❌ خطا در ذخیره');
+  }catch{alert('❌ خطا');}
+  btn.disabled=false;btn.textContent='💾 ذخیره تغییرات کانفیگ‌ها';
+}
 
 // ═══ Add User ═══
 function setContactType(el){API.contactType=el.dataset.contact;document.querySelectorAll('#page-adduser [data-contact]').forEach(b=>b.classList.toggle('active',b.dataset.contact===API.contactType));}
