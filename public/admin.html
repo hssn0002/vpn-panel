@@ -31,6 +31,7 @@
       <div id="page-users" class="page">
         <div class="admin-header"><h2>👥 کاربران</h2>
           <div class="btn-group">
+            <input type="text" id="userSearch" class="form-control" placeholder="🔍 جستجوی کاربر..." style="width:200px;padding:8px 12px;" oninput="searchUsers()"/>
             <button class="btn btn-outline btn-sm" onclick="refreshAllSubs()">🔄 بروزرسانی همه</button>
             <button class="btn btn-danger btn-sm" id="bulkDeleteBtn" style="display:none;" onclick="bulkDelete()">🗑️ حذف انتخاب شده</button>
             <button class="btn btn-primary btn-sm" onclick="switchPage('adduser')">➕ جدید</button>

@@ -60,13 +60,16 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_messages_seen ON messages(user_id, seen);
-  
-  -- Safe column additions (ignore if exists)
-  ALTER TABLE users ADD COLUMN manual_vless TEXT DEFAULT '[]';
-  ALTER TABLE users ADD COLUMN suspended INTEGER DEFAULT 0;
-  ALTER TABLE users ADD COLUMN error_acked INTEGER DEFAULT 0;
-  ALTER TABLE users ADD COLUMN display_name TEXT DEFAULT '';
 `);
+
+// Safe migration — ignore errors on duplicate columns
+function safeMigrate(col, def) {
+  try { db.exec(`ALTER TABLE users ADD COLUMN ${col} ${def}`); } catch {}
+}
+safeMigrate('manual_vless', "TEXT DEFAULT '[]'");
+safeMigrate('suspended', 'INTEGER DEFAULT 0');
+safeMigrate('error_acked', 'INTEGER DEFAULT 0');
+safeMigrate('display_name', "TEXT DEFAULT ''");
 
 const defaultSettings = {
   admin_password: '$2a$10$dummy_hash_for_427726',

@@ -109,7 +109,16 @@ app.post('/api/change-password', auth, adminOnly, (req, res) => {
 
 // ═══ Users CRUD ═══
 app.get('/api/users', auth, adminOnly, (req, res) => {
-  res.json(db.getUsers(req.query.sort, req.query.dir).map(sanitizeUser));
+  const search = req.query.search || '';
+  let users = db.getUsers(req.query.sort, req.query.dir).map(sanitizeUser);
+  if (search) {
+    const q = search.toLowerCase();
+    users = users.filter(u => 
+      (u.username || '').toLowerCase().includes(q) ||
+      (u.contact_id || '').toLowerCase().includes(q)
+    );
+  }
+  res.json(users);
 });
 
 app.get('/api/stats', auth, adminOnly, (req, res) => {

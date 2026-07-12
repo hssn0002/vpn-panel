@@ -52,10 +52,17 @@ function switchPage(page,el){
 }
 
 // ═══ Users ═══
+let debounceTimer=null;
+function searchUsers(){
+  clearTimeout(debounceTimer);
+  debounceTimer=setTimeout(()=>loadUsers(),300);
+}
+
 async function loadUsers(silent){
   if(!silent)document.getElementById('usersTableBody').innerHTML='<tr><td colspan="9" class="text-center"><div class="spinner"></div></td></tr>';
   try{
-    const[ur,sr]=await Promise.all([fetch(`/api/users?sort=${API.sortBy}&dir=${API.sortDir}`,{headers:authHeaders()}),fetch('/api/stats',{headers:authHeaders()})]);
+    const search=document.getElementById('userSearch')?.value||'';
+    const[ur,sr]=await Promise.all([fetch(`/api/users?sort=${API.sortBy}&dir=${API.sortDir}&search=${encodeURIComponent(search)}`,{headers:authHeaders()}),fetch('/api/stats',{headers:authHeaders()})]);
     const users=await ur.json(),stats=await sr.json();
     API.allUserIds=users.map(u=>u.id);
     renderUsers(users,stats);
