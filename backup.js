@@ -1,21 +1,11 @@
-/**
- * Backup System
- * Creates full site backups and sends to Telegram
- */
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
-const { addBackup } = require('./db');
 const telegram = require('./telegram');
 
 const BACKUP_DIR = path.join(__dirname, 'backups');
-
 fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
-/**
- * Create a full backup of the site (database + settings + certs)
- * @returns {Promise<string>} Path to the backup file
- */
 function createBackup() {
   return new Promise((resolve, reject) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -26,75 +16,59 @@ function createBackup() {
 
     output.on('close', () => {
       const size = archive.pointer();
-      addBackup(filename, size);
+      require('./db').addBackup(filename, size);
       resolve(filepath);
     });
-
     archive.on('error', reject);
     archive.pipe(output);
 
-    // Add database
+    // Database files
     const dbPath = path.join(__dirname, 'db', 'panel.db');
-    if (fs.existsSync(dbPath)) {
-      archive.file(dbPath, { name: 'db/panel.db' });
+    if (fs.existsSync(dbPath)) archive.file(dbPath, { name: 'db/panel.db' });
+    ['-wal', '-shm'].forEach(ext => {
+      const wp = dbPath + ext;
+      if (fs.existsSync(wp)) archive.file(wp, { name: `db/panel.db${ext}` });
+    });
+
+    // Uploads (chat images)
+    const uploadsDir = path.join(__dirname, 'public', 'uploads');
+    if (fs.existsSync(uploadsDir)) {
+      fs.readdirSync(uploadsDir).forEach(f => {
+        const fp = path.join(uploadsDir, f);
+        if (fs.statSync(fp).isFile()) archive.file(fp, { name: `public/uploads/${f}` });
+      });
     }
 
-    // Add WAL/SHM files if exist
-    for (const ext of ['-wal', '-shm']) {
-      const walPath = dbPath + ext;
-      if (fs.existsSync(walPath)) {
-        archive.file(walPath, { name: `db/panel.db${ext}` });
-      }
-    }
-
-    // Add certs
+    // Certificates
     const certsDir = path.join(__dirname, 'certs');
-    if (fs.existsSync(certsDir)) {
-      archive.directory(certsDir, 'certs');
-    }
+    if (fs.existsSync(certsDir)) archive.directory(certsDir, 'certs');
 
     archive.finalize();
   });
 }
 
-/**
- * Send backup to Telegram and optionally keep local copy
- */
 async function backupToTelegram() {
-  try {
-    const filepath = await createBackup();
-    const stats = fs.statSync(filepath);
-    const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-    
-    const caption = `📦 <b>بکاپ خودکار</b>\n📅 ${new Date().toLocaleString('fa-IR')}\n📏 حجم: ${sizeMB} MB`;
-    
-    if (telegram.initialized) {
-      await telegram.sendBackup(filepath, caption);
-    }
-    
-    // Keep only last 10 local backups
-    cleanupOldBackups(10);
-    
-    return filepath;
-  } catch (err) {
-    console.error('Backup failed:', err.message);
-    throw err;
+  const filepath = await createBackup();
+  const stats = fs.statSync(filepath);
+  const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+  const caption = `📦 <b>بکاپ خودکار</b>\n📅 ${new Date().toLocaleString('fa-IR')}\n📏 حجم: ${sizeMB} MB`;
+  if (telegram.initialized) {
+    await telegram.sendBackup(filepath, caption);
   }
+  cleanupOldBackups(10);
+  return filepath;
 }
 
-/**
- * Restore from a backup file
- * @param {string} backupPath - Path to the zip file
- */
 function restoreBackup(backupPath) {
   return new Promise((resolve, reject) => {
-    const extract = require('child_process').exec(
-      `unzip -o "${backupPath}" -d "${__dirname}"`,
-      (err, stdout, stderr) => {
-        if (err) return reject(err);
-        resolve(true);
-      }
-    );
+    const { exec } = require('child_process');
+    exec(`unzip -o "${backupPath}" -d "${__dirname}"`, (err, stdout, stderr) => {
+      if (err) return reject(err);
+      // Re-create uploads dir if missing
+      const uploadsDir = path.join(__dirname, 'public', 'uploads');
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      resolve(true);
+    });
   });
 }
 
@@ -119,9 +93,7 @@ function listLocalBackups() {
         date: fs.statSync(path.join(BACKUP_DIR, f)).mtime
       }))
       .sort((a, b) => b.date - a.date);
-  } catch (e) {
-    return [];
-  }
+  } catch (e) { return []; }
 }
 
 module.exports = { createBackup, backupToTelegram, restoreBackup, listLocalBackups };

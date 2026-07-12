@@ -1,398 +1,199 @@
-// ── User Panel JS ──
-let userData = null;
-let token = '';
-let ws = null;
-let allConfigs = '';
-
-// Parse URL to get username
-const pathParts = window.location.pathname.split('/');
+let userData = null, token = '', ws = null;
+const pathParts = location.pathname.split('/');
 const username = pathParts[pathParts.length - 1];
 
 async function init() {
-  if (!username) {
-    showError('آدرس نامعتبر است');
-    return;
-  }
-
+  if (!username) return showErr('آدرس نامعتبر');
   try {
-    const res = await fetch('/api/user-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username })
-    });
-
-    if (!res.ok) {
-      showError('کاربر یافت نشد');
-      return;
-    }
-
+    const res = await fetch('/api/user-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+    if (!res.ok) return showErr('کاربر یافت نشد');
     const data = await res.json();
-    token = data.token;
-    userData = data.user;
+    token = data.token; userData = data.user;
     localStorage.setItem('token_' + username, token);
-
-    renderUserPanel();
+    render();
     connectWS();
-    loadConfigs();
     loadMessages();
-    checkUnread();
-
-    // Refresh every 30 seconds
-    setInterval(refreshUserData, 30000);
-  } catch (e) {
-    showError('خطا در ارتباط با سرور');
-  }
+    loadConfigCount();
+    setInterval(refresh, 30000);
+  } catch { showErr('خطا در ارتباط'); }
 }
 
-function showError(msg) {
-  document.getElementById('loadingScreen').innerHTML = `<p class="text-center text-red">❌ ${msg}</p>`;
-}
+function showErr(m) { document.getElementById('loadingScreen').innerHTML = `<p class="text-center text-red">❌ ${m}</p>`; }
 
-function renderUserPanel() {
+function render() {
   document.getElementById('loadingScreen').style.display = 'none';
   document.getElementById('userPanel').style.display = 'block';
   document.getElementById('userWelcome').textContent = `👋 ${userData.username} عزیز، خوش آمدید`;
-
-  updateUsageInfo();
-
-  // Support links
-  if (userData.contact_id) {
-    const supportCard = document.getElementById('supportCard');
-    supportCard.style.display = 'block';
-    const linksDiv = document.getElementById('supportLinks');
-    const type = userData.contact_type;
-
-    if (type === 'telegram') {
-      const tid = userData.contact_id.replace('@', '');
-      linksDiv.innerHTML = `<a href="https://t.me/${tid}" target="_blank" class="btn btn-outline">📱 تلگرام</a>`;
-    } else if (type === 'bale') {
-      linksDiv.innerHTML = `<a href="https://ble.ir/${userData.contact_id.replace('@','')}" target="_blank" class="btn btn-outline">💬 بله</a>`;
-    }
-  }
-
-  // Auto-open chat if admin has unread messages
-  checkUnread();
+  updateInfo();
 }
 
-function updateUsageInfo() {
-  if (!userData) return;
-
+function updateInfo() {
   const vol = userData.remaining_volume || '0';
   const days = userData.remaining_days || 0;
-
-  const volEl = document.getElementById('remainingVolume');
-  const dayEl = document.getElementById('remainingDays');
-  const totalVol = document.getElementById('totalVolume');
-  const configCount = document.getElementById('configCount');
-
-  volEl.textContent = vol;
-  dayEl.textContent = days + ' روز';
-  totalVol.textContent = userData.total_volume || '--';
-
-  // Color coding
-  if (vol === 'نامحدود' || vol === '∞') {
-    volEl.className = 'value success';
-  } else if (parseFloat(vol) <= 0) {
-    volEl.className = 'value danger';
-  } else {
-    volEl.className = 'value success';
-  }
-
-  if (days <= 0) {
-    dayEl.className = 'value danger';
-  } else if (days <= 3) {
-    dayEl.className = 'value warning';
-  } else {
-    dayEl.className = 'value success';
-  }
+  const ve = document.getElementById('remainingVolume'), de = document.getElementById('remainingDays');
+  ve.textContent = vol; de.textContent = days + ' روز';
+  document.getElementById('totalVolume').textContent = userData.total_volume || '--';
+  const vc = (vol === 'نامحدود' || vol === '∞') ? 'success' : (parseFloat(vol) <= 0 ? 'danger' : 'success');
+  const dc = days <= 0 ? 'danger' : (days <= 3 ? 'warning' : 'success');
+  ve.className = 'value ' + vc; de.className = 'value ' + dc;
 }
 
-async function loadConfigs() {
-  if (!userData) return;
-
-  const configList = document.getElementById('configList');
-  const vlessLinks = userData.vless_links || [];
-
-  if (userData.unlimited_volume) {
-    // Manual VLESS mode
-    if (vlessLinks.length > 0) {
-      allConfigs = vlessLinks.join('\n');
-      configList.textContent = allConfigs;
-      document.getElementById('configCount').textContent = vlessLinks.length + ' عدد';
-    } else {
-      configList.textContent = 'کانفیگی تعریف نشده';
-      document.getElementById('copyAllBtn').style.display = 'none';
-    }
-    return;
-  }
-
-  // Subscription mode - fetch and decode configs
-  const subLinks = userData.subscription_links || [];
-  if (subLinks.length === 0) {
-    configList.textContent = 'کانفیگی تعریف نشده';
-    document.getElementById('copyAllBtn').style.display = 'none';
-    return;
-  }
-
-  configList.innerHTML = '<div class="spinner"></div> در حال دریافت کانفیگ‌ها...';
-
+async function loadConfigCount() {
   try {
-    const allConfigsArr = [];
-    for (const link of subLinks) {
-      try {
-        const res = await fetch(link, { headers: { 'User-Agent': 'v2rayN/6.23' } });
-        const text = await res.text();
-        const decoded = atob(text);
-        const lines = decoded.split('\n').filter(l => l.trim());
-        allConfigsArr.push(...lines);
-      } catch (e) {
-        // Skip failed subs
-      }
+    const res = await fetch('/api/me/config-count', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) {
+      const d = await res.json();
+      document.getElementById('configCount').textContent = d.count + ' عدد';
     }
-
-    if (allConfigsArr.length > 0) {
-      allConfigs = allConfigsArr.join('\n');
-      configList.textContent = allConfigs;
-      document.getElementById('configCount').textContent = allConfigsArr.length + ' عدد';
-    } else {
-      configList.textContent = 'خطا در دریافت کانفیگ‌ها';
-    }
-  } catch (e) {
-    configList.textContent = 'خطا در دریافت کانفیگ‌ها';
-  }
-}
-
-async function copyAllConfigs() {
-  if (!allConfigs) return;
-  try {
-    await navigator.clipboard.writeText(allConfigs);
-    const btn = document.getElementById('copyAllBtn');
-    btn.innerHTML = '<span>✅ کپی شد!</span>';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.innerHTML = '<span>📋 کپی همه کانفیگ‌ها</span>';
-      btn.classList.remove('copied');
-    }, 2000);
-  } catch (e) {
-    // Fallback
-    const ta = document.createElement('textarea');
-    ta.value = allConfigs;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    alert('کانفیگ‌ها کپی شدند');
-  }
+  } catch {}
 }
 
 async function copySubLink() {
-  const pageUrl = window.location.href;
-  try {
-    await navigator.clipboard.writeText(pageUrl);
-    alert('✅ لینک صفحه کپی شد');
-  } catch (e) {
-    alert(pageUrl);
-  }
+  try { await navigator.clipboard.writeText(location.href); document.getElementById('copySubBtn').textContent = '✅ کپی شد!';
+    setTimeout(() => document.getElementById('copySubBtn').textContent = '🔗 کپی لینک اشتراک', 2000); }
+  catch { alert(location.href); }
 }
+document.getElementById('copySubBtn').parentElement.onclick = copySubLink;
 
-// ── Chat ──
+// ═══ Chat ═══
 function toggleChat() {
-  const container = document.getElementById('chatContainer');
-  container.classList.toggle('open');
-  if (container.classList.contains('open')) {
-    document.getElementById('userChatInput').focus();
-    scrollChatToBottom();
-  }
+  document.getElementById('chatContainer').classList.toggle('open');
+  if (document.getElementById('chatContainer').classList.contains('open')) scrollChat();
 }
 
 function connectWS() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}/ws?token=${token}&type=user`);
-
-  ws.onmessage = (e) => {
+  ws = new WebSocket(`${proto}//${location.host}/ws?token=${encodeURIComponent(token)}&type=user`);
+  ws.onmessage = e => {
     const msg = JSON.parse(e.data);
-    if (msg.type === 'chat' && msg.senderType === 'admin') {
-      appendChatMessage(msg);
-      // Auto-open chat
-      document.getElementById('chatContainer').classList.add('open');
-    }
-    if (msg.type === 'unread_count') {
-      updateChatBadge(msg.count);
-    }
+    if (msg.type === 'chat' && msg.senderType === 'admin') { appendMsg(msg); document.getElementById('chatContainer').classList.add('open'); }
+    if (msg.type === 'message_deleted') { removeMsgElement(msg.messageId); }
+    if (msg.type === 'message_edited') { updateMsgElement(msg.messageId, msg.text); }
   };
-
   ws.onclose = () => setTimeout(connectWS, 3000);
 }
 
 async function loadMessages() {
   try {
-    const res = await fetch('/api/me/messages', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const messages = await res.json();
-
-    const container = document.getElementById('userChatMessages');
-    container.innerHTML = messages.map(m => renderChatMessage(m)).join('');
-    scrollChatToBottom();
-  } catch (e) {}
+    const res = await fetch('/api/me/messages', { headers: { 'Authorization': `Bearer ${token}` } });
+    const msgs = await res.json();
+    document.getElementById('userChatMessages').innerHTML = msgs.map(renderMsg).join('');
+    scrollChat();
+  } catch {}
 }
 
-function renderChatMessage(m) {
-  const bubbleClass = m.sender_type === 'user' ? 'msg-user' : 'msg-admin';
+function renderMsg(m) {
+  const cls = m.sender_type === 'user' ? 'msg-user' : 'msg-admin';
   let content = '';
-  if (m.image) {
-    content += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')" />`;
+  if (m.image) content += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')" />`;
+  if (m.message) content += esc(m.message).replace(/\n/g, '<br>');
+  let copyBtn = '';
+  if (m.sender_type === 'admin' && m.message) {
+    copyBtn = `<button class="btn btn-outline btn-sm" style="padding:2px 8px;margin-top:6px;font-size:0.7em;" onclick="event.stopPropagation();copyMsg('${esc(m.message.replace(/'/g,"\\'"))}')">📋 کپی</button>`;
   }
-  if (m.message) {
-    content += escapeHtml(m.message).replace(/\n/g, '<br>');
-  }
-  return `
-    <div class="msg-bubble ${bubbleClass}">
-      ${content}
-      <div class="msg-time">${m.created_at || ''}</div>
-    </div>
-  `;
+  return `<div class="msg-bubble ${cls}" id="msg-${m.id}">${content}${copyBtn}<div class="msg-time">${m.created_at || ''}</div></div>`;
 }
 
-function appendChatMessage(msg) {
-  const container = document.getElementById('userChatMessages');
+function appendMsg(msg) {
+  const c = document.getElementById('userChatMessages');
   const div = document.createElement('div');
-  div.className = 'msg-bubble msg-admin';
+  div.id = 'msg-' + msg.id;
+  div.className = 'msg-bubble ' + (msg.senderType === 'user' ? 'msg-user' : 'msg-admin');
   let content = '';
-  if (msg.image) content += `<img src="${msg.image}" class="msg-image" />`;
-  if (msg.message) content += escapeHtml(msg.message).replace(/\n/g, '<br>');
-  div.innerHTML = content + `<div class="msg-time">${msg.time || ''}</div>`;
-  container.appendChild(div);
-  scrollChatToBottom();
+  if (msg.image) content += `<img src="${msg.image}" class="msg-image" onclick="window.open('${msg.image}')" />`;
+  if (msg.message) content += esc(msg.message).replace(/\n/g, '<br>');
+  let copyBtn = '';
+  if (msg.senderType === 'admin' && msg.message) {
+    copyBtn = `<button class="btn btn-outline btn-sm" style="padding:2px 8px;margin-top:6px;font-size:0.7em;" onclick="event.stopPropagation();copyMsg('${esc(msg.message.replace(/'/g,"\\'"))}')">📋 کپی</button>`;
+  }
+  div.innerHTML = content + copyBtn + `<div class="msg-time">${msg.time || ''}</div>`;
+  c.appendChild(div); scrollChat();
 }
 
-async function sendUserChat() {
-  const input = document.getElementById('userChatInput');
+function removeMsgElement(id) {
+  const el = document.getElementById('msg-' + id);
+  if (el) el.remove();
+}
+
+function updateMsgElement(id, text) {
+  const el = document.getElementById('msg-' + id);
+  if (el) {
+    const bubble = el.querySelector('.msg-bubble') || el;
+    const parts = el.innerHTML.split('<div class="msg-time">');
+    let copyBtn = '';
+    if (el.classList.contains('msg-admin') && text) {
+      copyBtn = `<button class="btn btn-outline btn-sm" style="padding:2px 8px;margin-top:6px;font-size:0.7em;" onclick="event.stopPropagation();copyMsg('${esc(text.replace(/'/g,"\\'"))}')">📋 کپی</button>`;
+    }
+    el.innerHTML = esc(text).replace(/\n/g, '<br>') + copyBtn + (parts[1] ? '<div class="msg-time">' + parts[1] : '');
+  }
+}
+
+async function copyMsg(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+
+async function sendMsg() {
+  const input = document.getElementById('chatInput');
   const text = input.value.trim();
-  if (!text) return;
-
-  input.value = '';
-
-  // Add to UI
-  const container = document.getElementById('userChatMessages');
+  if (!text) return; input.value = '';
+  
+  const c = document.getElementById('userChatMessages');
   const div = document.createElement('div');
   div.className = 'msg-bubble msg-user';
-  div.innerHTML = escapeHtml(text).replace(/\n/g, '<br>') + '<div class="msg-time">همین الان</div>';
-  container.appendChild(div);
-  scrollChatToBottom();
+  div.innerHTML = esc(text).replace(/\n/g, '<br>') + '<div class="msg-time">همین الان</div>';
+  c.appendChild(div); scrollChat();
 
-  // Send via WS
+  // Only use WS — no REST fallback (fixes double-send)
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: 'chat',
-      userId: userData.id,
-      text: text
-    }));
-  }
-
-  // Also via REST
-  try {
-    await fetch(`/api/users/${userData.id}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ message: text })
-    });
-  } catch (e) {}
-
-  // Show waiting message on first message
-  if (container.querySelectorAll('.msg-user').length === 1) {
-    setTimeout(() => {
-      const waitMsg = document.createElement('div');
-      waitMsg.className = 'msg-bubble msg-admin';
-      waitMsg.innerHTML = 'لطفا چند لحظه منتظر باشید، همکاران ما به زودی پاسخ می‌دهند 🙏<div class="msg-time">همین الان</div>';
-      container.appendChild(waitMsg);
-      scrollChatToBottom();
-    }, 1500);
+    ws.send(JSON.stringify({ type: 'chat', userId: userData.id, text }));
+  } else {
+    // Fallback to REST only if WS not connected
+    try { await fetch(`/api/messages/${userData.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ message: text }) }); } catch {}
   }
 }
 
-async function sendUserImage() {
-  const fileInput = document.getElementById('userImageInput');
-  const file = fileInput.files[0];
+async function sendImage() {
+  const file = document.getElementById('imgInput').files[0];
   if (!file) return;
-
-  const formData = new FormData();
-  formData.append('image', file);
-
+  const fd = new FormData(); fd.append('image', file);
   try {
-    const res = await fetch('/api/upload-image', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
-    });
+    const res = await fetch('/api/upload-image', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
     const data = await res.json();
-
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'chat',
-        userId: userData.id,
-        image: data.url
-      }));
+      ws.send(JSON.stringify({ type: 'chat', userId: userData.id, image: data.url }));
+    } else {
+      await fetch(`/api/messages/${userData.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ image: data.url }) });
     }
-
-    // Show in UI
-    const container = document.getElementById('userChatMessages');
+    const c = document.getElementById('userChatMessages');
     const div = document.createElement('div');
     div.className = 'msg-bubble msg-user';
     div.innerHTML = `<img src="${data.url}" class="msg-image" /><div class="msg-time">همین الان</div>`;
-    container.appendChild(div);
-    scrollChatToBottom();
-  } catch (e) {}
-
-  fileInput.value = '';
+    c.appendChild(div); scrollChat();
+  } catch {}
+  document.getElementById('imgInput').value = '';
 }
 
-function scrollChatToBottom() {
-  const container = document.getElementById('userChatMessages');
-  if (container) container.scrollTop = container.scrollHeight;
+function scrollChat() {
+  const c = document.getElementById('userChatMessages');
+  if (c) c.scrollTop = c.scrollHeight;
 }
 
-async function checkUnread() {
+async function refresh() {
   try {
-    const res = await fetch('/api/me/unread', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    updateChatBadge(data.count);
-  } catch (e) {}
-}
-
-function updateChatBadge(count) {
-  const badge = document.getElementById('chatNotifBadge');
-  if (count > 0) {
-    badge.style.display = 'inline-block';
-    badge.textContent = count;
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-async function refreshUserData() {
+    const res = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) { userData = await res.json(); updateInfo(); }
+  } catch {}
   try {
-    const res = await fetch('/api/me', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await fetch('/api/me/unread', { headers: { 'Authorization': `Bearer ${token}` } });
     if (res.ok) {
-      userData = await res.json();
-      updateUsageInfo();
+      const d = await res.json();
+      const b = document.getElementById('chatBadge');
+      if (d.count > 0) { b.style.display = 'inline-block'; b.textContent = d.count; }
+      else b.style.display = 'none';
     }
-  } catch (e) {}
+  } catch {}
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// Start
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 init();
