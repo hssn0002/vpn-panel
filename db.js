@@ -61,7 +61,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_messages_seen ON messages(user_id, seen);
   
-  -- Add missing columns for upgrades
+  -- Safe column additions (ignore if exists)
   ALTER TABLE users ADD COLUMN manual_vless TEXT DEFAULT '[]';
   ALTER TABLE users ADD COLUMN suspended INTEGER DEFAULT 0;
   ALTER TABLE users ADD COLUMN error_acked INTEGER DEFAULT 0;
