@@ -91,6 +91,19 @@ function auth(req, res, next) {
 }
 function adminOnly(req, res, next) { req.user?.role === 'admin' ? next() : res.status(403).json({ error: 'Admin only' }); }
 
+app.get('/api/debug', (req, res) => {
+  try {
+    const info = { node: process.version, platform: process.platform, dbInit: !!db.db() };
+    const users = db.getUsers();
+    info.userCount = users.length;
+    info.settings = Object.keys(db.getAllSettings());
+    info.adminHash = (db.getSetting('admin_password') || '').substring(0, 30);
+    res.json(info);
+  } catch(e) {
+    res.status(500).json({ error: e.message, stack: e.stack });
+  }
+});
+
 app.post('/api/login', (req, res) => {
   const storedHash = db.getSetting('admin_password');
   let valid = false;
