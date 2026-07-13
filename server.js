@@ -35,13 +35,9 @@ const upload = multer({ dest: uploadDir, limits: { fileSize: 50 * 1024 * 1024 } 
 const certsDir = path.join(__dirname, 'certs');
 const certUpload = multer({ dest: certsDir, limits: { fileSize: 10 * 1024 * 1024 } });
 
-const JWT_SECRET = db.getSetting('jwt_secret') || crypto.randomBytes(32).toString('hex');
-db.setSetting('jwt_secret', JWT_SECRET);
-
-const storedPass = db.getSetting('admin_password');
-if (!storedPass || storedPass === '$2a$10$dummy_hash_for_427726') {
-  db.setSetting('admin_password', bcrypt.hashSync('427726', 10));
-}
+// JWT_SECRET and admin password will be initialized after db.init()
+let JWT_SECRET = '';
+let storedPassInitialized = false;
 
 // ═══ WebSocket ═══
 const wss = new WebSocket.Server({ server });
@@ -535,6 +531,17 @@ cron.schedule('*/5 * * * *', async () => {
 // ═══ Start ═══
 (async () => {
   await db.init();
+  
+  // Initialize JWT secret and admin password after DB is ready
+  JWT_SECRET = db.getSetting('jwt_secret') || crypto.randomBytes(32).toString('hex');
+  db.setSetting('jwt_secret', JWT_SECRET);
+  
+  const storedPass = db.getSetting('admin_password');
+  if (!storedPass || storedPass === '$2a$10$dummy_hash_for_427726' || storedPass.length < 20) {
+    db.setSetting('admin_password', bcrypt.hashSync('427726', 10));
+  }
+  storedPassInitialized = true;
+  
   initTelegram();
 
   const PORT = process.env.PORT || 3000;
