@@ -17,7 +17,16 @@ const app = express();
 const server = http.createServer(app);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use((req, res, next) => { res.type('html'); res.charset = 'utf-8'; next(); });
+app.use((req, res, next) => { 
+  // Don't override content-type for static files
+  const ext = path.extname(req.url).toLowerCase();
+  if (ext === '.css') { res.type('text/css'); res.charset = 'utf-8'; }
+  else if (ext === '.js') { res.type('application/javascript'); res.charset = 'utf-8'; }
+  else if (ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.gif' || ext === '.webp' || ext === '.svg') { /* let express.static handle */ }
+  else if (ext === '.json') { /* let express handle */ }
+  else { res.type('html'); res.charset = 'utf-8'; }
+  next(); 
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 const uploadDir = path.join(__dirname, 'public', 'uploads');
