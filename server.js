@@ -499,11 +499,14 @@ cron.schedule('*/5 * * * *', async () => {
 });
 
 // ═══ Start ═══
-initTelegram();
+(async () => {
+  await db.init();
+  initTelegram();
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\nVPN Panel v3.0 | Port ${PORT} | Admin: /${db.getSetting('panel_path')||'panel_h'}\n`);
-  setTimeout(async () => { for (const u of db.getUsers()) { try { await refreshSub(u.id); } catch {} } }, 5000);
-});
-process.on('SIGTERM', () => { wss.close(); server.close(); process.exit(0); });
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`\nVPN Panel v3.0 | Port ${PORT} | Admin: /${db.getSetting('panel_path')||'panel_h'}\n`);
+    setTimeout(async () => { for (const u of db.getUsers()) { try { await refreshSub(u.id); } catch {} } }, 5000);
+  });
+  process.on('SIGTERM', () => { wss.close(); server.close(); process.exit(0); });
+})();

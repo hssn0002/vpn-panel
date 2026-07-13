@@ -12,13 +12,13 @@
     "setup": "npm install"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "better-sqlite3": "^11.3.0",
-    "ws": "^8.18.0",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3",
-    "multer": "^1.4.5-lts.1",
     "archiver": "^7.0.1",
-    "node-cron": "^3.0.3"
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "sql.js": "^1.14.1",
+    "ws": "^8.18.0"
   }
 }
