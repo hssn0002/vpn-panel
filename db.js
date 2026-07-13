@@ -47,11 +47,6 @@ function prepare(sql) {
     get: (...params) => {
       try {
         const stmt = db.prepare(sql);
-        if (stmt.getAsObject) {
-          const res = stmt.getAsObject(params);
-          stmt.free();
-          return res || null;
-        }
         stmt.bind(params);
         if (stmt.step()) {
           const cols = stmt.getColumnNames();
@@ -59,7 +54,7 @@ function prepare(sql) {
           stmt.free();
           const obj = {};
           cols.forEach((c,i) => { obj[c] = vals[i]; });
-          return obj;
+          return Object.keys(obj).length > 0 ? obj : null;
         }
         stmt.free();
         return null;
