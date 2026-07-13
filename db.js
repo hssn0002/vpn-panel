@@ -8,8 +8,10 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 let db = null;
 
 function openDB() {
-  return new Promise((resolve) => {
-    initSqlJs().then(SQL => {
+  return new Promise((resolve, reject) => {
+    const wasmPath = path.join(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
+    const wasmBinary = fs.existsSync(wasmPath) ? fs.readFileSync(wasmPath) : undefined;
+    initSqlJs({ wasmBinary }).then(SQL => {
       if (fs.existsSync(DB_PATH)) {
         const buf = fs.readFileSync(DB_PATH);
         db = new SQL.Database(buf);
@@ -18,7 +20,7 @@ function openDB() {
       }
       db.run('PRAGMA foreign_keys = ON');
       resolve();
-    });
+    }).catch(reject);
   });
 }
 
